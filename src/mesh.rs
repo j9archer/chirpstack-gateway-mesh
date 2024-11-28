@@ -18,6 +18,9 @@ use crate::{
     },
     proxy,
 };
+// use chirpstack_api::common::{Location, LocationSource};
+
+
 
 static CTX_PREFIX: [u8; 3] = [1, 2, 3];
 static MESH_CHANNEL: Mutex<usize> = Mutex::new(0);
@@ -138,6 +141,14 @@ async fn proxy_uplink_mesh_packet(pl: &gw::UplinkFrame, packet: MeshPacket) -> R
             ctx.extend_from_slice(&mesh_pl.metadata.uplink_id.to_be_bytes());
             ctx
         };
+        // Set location.
+        rx_info.location = Some(gw::Location {
+            latitude: mesh_pl.latitude,
+            longitude: mesh_pl.longitude,
+            altitude: 0.0, // Set altitude if available
+            source: gw::LocationSource::Gps.into(), // Or the appropriate source
+            ..Default::default()
+        });        
     }
 
     // Set TxInfo.
@@ -317,6 +328,17 @@ async fn relay_uplink_lora_packet(pl: &gw::UplinkFrame) -> Result<()> {
         .as_ref()
         .ok_or_else(|| anyhow!("modulation is None"))?;
 
+    // Extract latitude and longitude from rx_info.location
+    let (latitude, longitude) = if let Some(location) = &rx_info.location {
+        // Convert latitude and longitude to microdegrees
+        let latitude = (location.latitude * 1_000_000.0) as i32;
+        let longitude = (location.longitude * 1_000_000.0) as i32;
+        (latitude, longitude)
+    } else {
+        // Handle missing GPS data
+        (0, 0)
+    };
+
     let mut packet = MeshPacket {
         mhdr: MHDR {
             payload_type: PayloadType::Uplink,
@@ -329,6 +351,8 @@ async fn relay_uplink_lora_packet(pl: &gw::UplinkFrame) -> Result<()> {
                 channel: helpers::frequency_to_chan(tx_info.frequency)?,
                 rssi: rx_info.rssi as i16,
                 snr: rx_info.snr as i8,
+                latitude,
+                longitude,                
             },
             relay_id: backend::get_relay_id().await?,
             phy_payload: pl.phy_payload.clone(),

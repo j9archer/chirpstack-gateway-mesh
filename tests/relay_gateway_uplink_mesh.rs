@@ -32,6 +32,8 @@ async fn test_relay_gateway_uplink_mesh() {
                     rssi: 0,
                     snr: 0,
                     channel: 0,
+                    latitude: 0,
+                    longitude: 0,
                 },
                 relay_id: [1, 2, 3, 4],
                 phy_payload: vec![4, 3, 2, 1],

@@ -8,7 +8,18 @@ pkgs.mkShell {
     pkgs.jq
     pkgs.cargo-cross
     pkgs.cargo-deb
+    pkgs.libiconv
+    pkgs.zeromq
+    pkgs.pkg-config
   ];
-  DOCKER_BUILDKIT = "1";
-  NIX_STORE = "/nix/store";
+
+  shellHook = ''
+    export DOCKER_BUILDKIT=1
+    export NIX_STORE=/nix/store
+    export LIBZMQ_NO_VENDOR=1
+    export PKG_CONFIG_ALLOW_SYSTEM_LIBS=1
+    export PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1
+    export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${pkgs.zeromq}/lib/pkgconfig
+  '';
 }
+
