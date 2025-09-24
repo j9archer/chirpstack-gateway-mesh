@@ -529,15 +529,17 @@ async fn relay_downlink_lora_packet(pl: &gw::DownlinkFrame) -> Result<gw::Downli
             .timing
             .as_ref()
             .ok_or_else(|| anyhow!("timing is None"))?;
-        let delay = match &timing.parameters {
-            Some(gw::timing::Parameters::Delay(v)) => v
-                .delay
-                .as_ref()
-                .map(|v| v.seconds as u8)
-                .unwrap_or_default(),
-            _ => {
-                return Err(anyhow!("Only Delay timing is supported"));
-            }
+let delay = match &timing.parameters {
+      Some(gw::timing::Parameters::Delay(v)) => v
+           .delay
+           .as_ref()
+           .map(|v| v.seconds as u8)
+           .unwrap_or_default(),
+       Some(gw::timing::Parameters::Immediately(_)) => 1,
+       _ => {
+          return Err(anyhow!("Only Delay or Immediately timing is supported"));
+       }
+};
         };
 
         let ctx = tx_info
